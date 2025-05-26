@@ -54,6 +54,70 @@
     let hull = [];
     let algorithm = 'divide';
     const pointCount = 50;
+    const pointRadius = 4;
+    
+    // Shared algorithm variables
+    let lower = [];
+    let upper = [];
+    let index = 2;
+    let currentIndex = -1;
+    let nextIndex = 1;
+    let time = 0;
+    let leftPointIndex = 0;
+    let finalHull = [];
+    let finalPoints = [];
+    let internalHulls = [[], [], []];
+    let internalPoints = [[], [], []];
+    const calculateFrameRate = 15;
+
+    // Algorithm states
+    let divideStep = 0;
+    let jarvisStep = 0;
+    let monotoneStep = 0;
+    let grahamStep = 0;
+
+    // Draw helper functions
+    function drawPoints() {
+      push();
+      stroke(255);
+      strokeWeight(4);
+      for (const p of points) {
+        point(p.x, p.y);
+      }
+      pop();
+    }
+
+    function drawHull(hullPoints, hue) {
+      if (!hullPoints || hullPoints.length < 2) return;
+      
+      push();
+      colorMode(HSB, 100);
+      stroke(hue, 80, 90);
+      strokeWeight(2);
+      noFill();
+      beginShape();
+      for (const p of hullPoints) {
+        vertex(p.x, p.y);
+      }
+      if (hullPoints.length > 2) {
+        vertex(hullPoints[0].x, hullPoints[0].y);
+      }
+      endShape();
+      pop();
+    }
+
+    function drawEdges(hullPoints, hue) {
+      if (!hullPoints || hullPoints.length < 2) return;
+      
+      push();
+      colorMode(HSB, 100);
+      stroke(hue, 80, 90);
+      strokeWeight(2);
+      for (let i = 0; i < hullPoints.length - 1; i++) {
+        line(hullPoints[i].x, hullPoints[i].y, hullPoints[i + 1].x, hullPoints[i + 1].y);
+      }
+      pop();
+    }
     
     function setup() {
       // Create canvas
@@ -65,6 +129,9 @@
       
       // Set frame rate for animation
       frameRate(30);
+      
+      // Set color mode to HSB
+      colorMode(HSB, 100);
     }
     
     function draw() {
@@ -83,16 +150,6 @@
       } else if (algorithm === 'graham') {
         window.grahamScan();
       }
-    }
-    
-    function drawPoints() {
-      push();
-      stroke(255);
-      strokeWeight(4);
-      for (const p of points) {
-        point(p.x, p.y);
-      }
-      pop();
     }
     
     function generatePoints() {
@@ -139,15 +196,16 @@
       upper = [];
       
       // Reset algorithm states
-      divideStep = divideSteps.SPLIT;
-      jarvisStep = jarvisSteps.LEFT;
-      monotoneStep = monotoneSteps.SORT;
-      grahamStep = grahamSteps.SORT;
+      divideStep = 0;
+      jarvisStep = 0;
+      monotoneStep = 0;
+      grahamStep = 0;
       
       // Reset indices
-      currentIndex = 0;
+      currentIndex = -1;
       nextIndex = 1;
       index = 2;
+      leftPointIndex = 0;
       time = 0;
       
       // Generate new points
