@@ -263,77 +263,52 @@ function divideAndConquer() {
 				break;
 			}
 
+			divideStep++;
+			internalHulls[0].push(internalPoints[0][0].copy());
 			currentIndex = 0;
 			nextIndex = 1;
 			index = 2;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-}	divideAndConquer();	// Execute the algorithm		drawHull(finalHull, 0);	// Draw final hull		}		drawHull(internalHulls[i], (i + 1) * 60);	for (let i = 0; i < internalHulls.length; i++) {	// Draw internal hulls		drawPoints();	// Draw all points		strokeWeight(2);	stroke(255);		background(51);function draw() { */ * Draw function/**}	divideAndConquer();	// Start the algorithm		}		points.push(createVector(random(width), random(height)));	for (let i = 0; i < 300; i++) {	// Generate random points		strokeWeight(2);	stroke(255);	noFill();	createCanvas(windowWidth, windowHeight);function setup() { */ * Setup function/**}	}		break;			noLoop();		case divideSteps.DONE:		break;			fuse();		case divideSteps.FUSE:		break;			calculateHull(2);		case divideSteps.CALCULATE3:		break;			calculateHull(1);		case divideSteps.CALCULATE2:		break;			calculateHull(0);		case divideSteps.CALCULATE1:		break;			divideStep++;			internalHulls[0].push(internalPoints[0][0].copy());
+		break;
+			
+		case divideSteps.CALCULATE1:
+			drawHull(internalHulls[0], 0);
+			calculateHull(0);
+		break;
+
+		case divideSteps.CALCULATE2:
+			drawHull(internalHulls[0], 0);
+			drawHull(internalHulls[1], 30);
+			calculateHull(1);
+		break;
+
+		case divideSteps.CALCULATE3:
+			drawHull(internalHulls[0], 0);
+			drawHull(internalHulls[1], 30);
+			drawHull(internalHulls[2], 60);
+			calculateHull(2);
+		break;
+
+		case divideSteps.FUSE:
+			drawHull(internalHulls[0], 0);
+			drawHull(internalHulls[1], 30);
+			drawHull(internalHulls[2], 60);
+
+			fuse();
+			drawHull(finalHull, 90);
+		break;
+
+		case divideSteps.DONE:
+			drawHull(finalHull, 90);
+			time++;
+
+			if (time > frameRate() * 4) {
+				reset();
+			}
+		break;
+	}
+}
+
+window.divideAndConquer = divideAndConquer;
 		case divideSteps.CALCULATE1:
 			drawHull(internalHulls[0], 0);
 			calculateHull(0);

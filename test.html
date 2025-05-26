@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Convex Hull Test</title>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+    }
+    
+    #canvas-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    
+    .controls {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    button {
+      padding: 8px 16px;
+      margin: 0 5px;
+      background-color: #005580;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    button:hover {
+      background-color: #003d5c;
+    }
+    
+    h1 {
+      text-align: center;
+      color: #005580;
+    }
+  </style>
+
+  <!-- Load p5.js libraries -->
+  <script src="libraries/p5-1.9.2.min.js"></script>
+  <script src="libraries/p5.dom.js"></script>
+  
+  <script>
+    // Global variables
+    let points = [];
+    let hull = [];
+    let algorithm = 'divide';
+    const pointCount = 50;
+    
+    function setup() {
+      // Create canvas
+      const cnv = createCanvas(600, 600);
+      cnv.parent('canvas-container');
+      
+      // Generate random points
+      generatePoints();
+      
+      // Set frame rate for animation
+      frameRate(30);
+    }
+    
+    function draw() {
+      background(51);
+      
+      // Draw all points
+      drawPoints();
+      
+      // Run selected algorithm
+      if (algorithm === 'jarvis') {
+        window.jarvisMarch();
+      } else if (algorithm === 'divide') {
+        window.divideAndConquer();
+      } else if (algorithm === 'monotone') {
+        window.monotoneChain();
+      } else if (algorithm === 'graham') {
+        window.grahamScan();
+      }
+    }
+    
+    function drawPoints() {
+      push();
+      stroke(255);
+      strokeWeight(4);
+      for (const p of points) {
+        point(p.x, p.y);
+      }
+      pop();
+    }
+    
+    function generatePoints() {
+      points = [];
+      hull = [];
+      
+      // Generate points with better distribution
+      const margin = width * 0.1;
+      const effectiveWidth = width - 2 * margin;
+      const effectiveHeight = height - 2 * margin;
+      
+      for (let i = 0; i < pointCount; i++) {
+        // Use polar coordinates for better distribution
+        const r = random(0, min(effectiveWidth, effectiveHeight) / 2);
+        const theta = random(0, TWO_PI);
+        const x = width/2 + r * cos(theta);
+        const y = height/2 + r * sin(theta);
+        
+        points.push(createVector(x, y));
+      }
+      
+      // Add some points near the edges
+      for (let i = 0; i < 5; i++) {
+        const angle = random(TWO_PI);
+        const x = width/2 + (effectiveWidth/2 - margin/2) * cos(angle);
+        const y = height/2 + (effectiveHeight/2 - margin/2) * sin(angle);
+        points.push(createVector(x, y));
+      }
+    }
+    
+    function setAlgorithm(algo) {
+      algorithm = algo;
+      reset();
+    }
+    
+    function reset() {
+      // Reset algorithm variables
+      hull = [];
+      internalHulls = [[], [], []];
+      internalPoints = [[], [], []];
+      finalHull = [];
+      finalPoints = [];
+      lower = [];
+      upper = [];
+      
+      // Reset algorithm states
+      divideStep = divideSteps.SPLIT;
+      jarvisStep = jarvisSteps.LEFT;
+      monotoneStep = monotoneSteps.SORT;
+      grahamStep = grahamSteps.SORT;
+      
+      // Reset indices
+      currentIndex = 0;
+      nextIndex = 1;
+      index = 2;
+      time = 0;
+      
+      // Generate new points
+      generatePoints();
+    }
+  </script>
+</head>
+<body>
+  <h1>Convex Hull Algorithm Test</h1>
+  
+  <div class="controls">
+    <button onclick="setAlgorithm('jarvis')">Jarvis March</button>
+    <button onclick="setAlgorithm('divide')">Divide & Conquer</button>
+    <button onclick="setAlgorithm('monotone')">Monotone Chain</button>
+    <button onclick="setAlgorithm('graham')">Graham Scan</button>
+    <button onclick="reset()">Reset</button>
+  </div>
+  
+  <div id="canvas-container"></div>
+  
+  <!-- Load algorithm files -->
+  <script src="jarvis.js"></script>
+  <script src="divide.js"></script>
+  <script src="monotone.js"></script>
+  <script src="graham.js"></script>
+</body>
+</html>
