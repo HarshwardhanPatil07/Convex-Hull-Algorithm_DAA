@@ -83,3 +83,4 @@ function grahamScan() {
 	}
 	return;
 }
+window.grahamScan = grahamScan;

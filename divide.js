@@ -5,6 +5,14 @@
 *
 *******************************************************************************/
 
+// Add global variables for drawing
+let points = [];
+let currentIndex = 0;
+let nextIndex = 1;
+let index = 2;
+let time = 0;
+let calculateFrameRate = 30;
+
 let internalHulls = [[], [], []];
 
 let internalPoints = [[], [], []];
@@ -34,10 +42,10 @@ let divideStep = divideSteps.SPLIT;
 *	@enum {String}
 */
 const splitMethods = Object.freeze({
-	VERTICAL: " Vertical Split ",
-	HORIZONTAL: " Horizontal Split ",
-	RADIAL: " Radial Split ",
-	ANGULAR: " Angular Split "
+    HORIZONTAL: "horizontal",
+    VERTICAL: "vertical",
+    RADIAL: "radial",
+    ANGULAR: "angular"
 });
 
 let splitMethod = splitMethods.HORIZONTAL;
@@ -166,9 +174,63 @@ function fuse() {
 }
 
 /**
+ * Draw a hull with specified color hue
+ * @param {Array} hull Array of points forming the hull
+ * @param {number} hue Color hue for the hull
+ */
+function drawHull(hull, hue) {
+    if (hull.length < 2) return;
+    
+    push();
+    strokeWeight(2);
+    colorMode(HSB);
+    stroke(hue, 100, 100);
+    noFill();
+    
+    beginShape();
+    for (const p of hull) {
+        vertex(p.x, p.y);
+    }
+    vertex(hull[0].x, hull[0].y);
+    endShape();
+    pop();
+}
+
+/**
+ * Draw all points
+ */
+function drawPoints() {
+    push();
+    stroke(0);
+    strokeWeight(4);
+    for (const p of points) {
+        point(p.x, p.y);
+    }
+    pop();
+}
+
+/**
+ * Reset the algorithm state
+ */
+function reset() {
+    internalHulls = [[], [], []];
+    internalPoints = [[], [], []];
+    finalHull = [];
+    finalPoints = [];
+    divideStep = divideSteps.SPLIT;
+    currentIndex = 0;
+    nextIndex = 1;
+    index = 2;
+    time = 0;
+}
+
+/**
 *	The Divide & Conquer algorithm
 */
 function divideAndConquer() {
+    // Draw points in every frame
+    drawPoints();
+    
 	switch(divideStep) {
 		case divideSteps.SPLIT:
 			switch(splitMethod) {
@@ -204,10 +266,74 @@ function divideAndConquer() {
 			currentIndex = 0;
 			nextIndex = 1;
 			index = 2;
-			internalHulls[0].push(internalPoints[0][0].copy());
-			divideStep++;
-		break;
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}	divideAndConquer();	// Execute the algorithm		drawHull(finalHull, 0);	// Draw final hull		}		drawHull(internalHulls[i], (i + 1) * 60);	for (let i = 0; i < internalHulls.length; i++) {	// Draw internal hulls		drawPoints();	// Draw all points		strokeWeight(2);	stroke(255);		background(51);function draw() { */ * Draw function/**}	divideAndConquer();	// Start the algorithm		}		points.push(createVector(random(width), random(height)));	for (let i = 0; i < 300; i++) {	// Generate random points		strokeWeight(2);	stroke(255);	noFill();	createCanvas(windowWidth, windowHeight);function setup() { */ * Setup function/**}	}		break;			noLoop();		case divideSteps.DONE:		break;			fuse();		case divideSteps.FUSE:		break;			calculateHull(2);		case divideSteps.CALCULATE3:		break;			calculateHull(1);		case divideSteps.CALCULATE2:		break;			calculateHull(0);		case divideSteps.CALCULATE1:		break;			divideStep++;			internalHulls[0].push(internalPoints[0][0].copy());
 		case divideSteps.CALCULATE1:
 			drawHull(internalHulls[0], 0);
 			calculateHull(0);
@@ -245,3 +371,5 @@ function divideAndConquer() {
 		break;
 	}
 }
+
+window.divideAndConquer = divideAndConquer;

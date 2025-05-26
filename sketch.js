@@ -110,35 +110,76 @@ let selectSplitMethod;
 */
 let selectAngularDirection;
 
+// Shared algorithm state variables
+let hull = [];
+let lower = [];
+let upper = [];
+let index = 2;
+let currentIndex = -1;
+let nextIndex = 1;
+let time = 0;
+let leftPointIndex = 0;
+let finalHull = [];
+let finalPoints = [];
+let internalHulls = [[], [], []];
+let internalPoints = [[], [], []];
+let jarvisStep = 0;
+let grahamStep = 0;
+let monotoneStep = 0;
+let divideStep = 0;
+let angularDirection;
+const calculateFrameRate = 15;
+
 /**
 *	Reset all algorithm variables to initial values
 */
 function reset() {
+	// Reset algorithm state variables
 	hull = [];
 	jarvisStep = 0;
-	leftPointIndex = 0;;
+	leftPointIndex = 0;
 	currentIndex = -1;
 	nextIndex = 1;
 	index = 2;
 	time = 0;
-
+	
 	internalHulls = [[], [], []];
 	finalHull = [];
 	finalPoints = [];
 	lower = [];
 	upper = [];
-
+	
 	divideStep = divideSteps.SPLIT;
 	jarvisStep = jarvisSteps.LEFT;
 	monotoneStep = monotoneSteps.SORT;
 	grahamStep = grahamSteps.SORT;
-
+	
+	// Generate new points with better distribution
 	points = [];
+	const margin = Math.max(width, height) * 0.1;
+	const effectiveWidth = width - 2 * margin;
+	const effectiveHeight = height - 2 * margin;
+	
 	for(let i = 0; i < numPoints; ++i) {
-		const x = random(xBuffer, width - xBuffer);
-		const y = random(yBuffer, height - yBuffer);
-		const newPoint = createVector(x, y);
-		points.push(newPoint);
+		// Use polar coordinates for better point distribution
+		const r = random(0, Math.min(effectiveWidth, effectiveHeight) / 2);
+		const theta = random(0, TWO_PI);
+		const x = width/2 + r * cos(theta);
+		const y = height/2 + r * sin(theta);
+		
+		// Ensure points are within bounds
+		const boundedX = constrain(x, margin, width - margin);
+		const boundedY = constrain(y, margin, height - margin);
+		
+		points.push(createVector(boundedX, boundedY));
+	}
+	
+	// Add some points near the edges for better hull testing
+	for(let i = 0; i < min(4, numPoints/10); i++) {
+		const angle = random(TWO_PI);
+		const x = width/2 + (effectiveWidth/2 - margin/2) * cos(angle);
+		const y = height/2 + (effectiveHeight/2 - margin/2) * sin(angle);
+		points.push(createVector(x, y));
 	}
 }
 
@@ -212,19 +253,36 @@ function angularSelectEvent() {
 *	@param colour {Integer} Value of the hue of the given hull from 0 to 100
 */
 function drawHull(hullArray, colour) {
+	if (!hullArray || hullArray.length < 3) return;
+	
 	push();
 	colorMode(HSB, 100);
-	fill(colour, 100, 100, 50);
+	
+	// Draw filled hull
+	fill(colour, 70, 100, 30);
+	noStroke();
 	beginShape();
-	for (let i = hullArray.length - 1; i >= 0; i--) {
-		push();
-		stroke(colour, 100,100);
-		strokeWeight(0.3 * pointRadius);
-		ellipse(hullArray[i].x, hullArray[i].y, pointRadius, pointRadius);
+	for (let i = 0; i < hullArray.length; i++) {
 		vertex(hullArray[i].x, hullArray[i].y);
-		pop();
 	}
 	endShape(CLOSE);
+	
+	// Draw hull edges and vertices
+	for (let i = 0; i < hullArray.length; i++) {
+		// Draw edge
+		stroke(colour, 100, 100);
+		strokeWeight(2);
+		const next = (i + 1) % hullArray.length;
+		line(hullArray[i].x, hullArray[i].y, hullArray[next].x, hullArray[next].y);
+		
+		// Draw vertex
+		push();
+		fill(colour, 100, 100);
+		strokeWeight(1);
+		ellipse(hullArray[i].x, hullArray[i].y, pointRadius * 1.2, pointRadius * 1.2);
+		pop();
+	}
+	
 	colorMode(RGB);
 	pop();
 }
@@ -238,17 +296,32 @@ function drawHull(hullArray, colour) {
 *	@param colour {Integer} Value of the hue of the given hull from 0 to 100
 */
 function drawEdges(hullArray, colour) {
+	if (!hullArray || hullArray.length < 2) return;
+	
 	push();
 	colorMode(HSB, 100);
-	stroke(colour, 100, 100, 50);
-	strokeWeight(0.3 * pointRadius);
+	
+	// Draw edges
+	stroke(colour, 100, 100, 80);
+	strokeWeight(2);
 	noFill();
 	beginShape();
-	for (let i = hullArray.length - 1; i >= 0; i--) {
-		ellipse(hullArray[i].x, hullArray[i].y, pointRadius, pointRadius);
+	for (let i = 0; i < hullArray.length; i++) {
 		vertex(hullArray[i].x, hullArray[i].y);
+		
+		// Draw vertices
+		push();
+		fill(colour, 100, 100);
+		strokeWeight(1);
+		ellipse(hullArray[i].x, hullArray[i].y, pointRadius * 1.2, pointRadius * 1.2);
+		pop();
 	}
-	endShape();
+	if (hullArray.length > 2) {
+		endShape(CLOSE);
+	} else {
+		endShape();
+	}
+	
 	colorMode(RGB);
 	pop();
 }
@@ -257,24 +330,30 @@ function drawEdges(hullArray, colour) {
 *   p5.js setup function, creates canvas.
 */
 function setup() {
+	// Calculate canvas size based on window dimensions
 	let cnvSize;
 	if(windowWidth > windowHeight) {
-		cnvSize = 0.95 * windowHeight;
+		cnvSize = min(0.8 * windowHeight, 800);
 	} else {
-		cnvSize = 0.6 * windowWidth;
+		cnvSize = min(0.8 * windowWidth, 800);
 	}
-	let cnv = createCanvas(cnvSize, 0.7 * cnvSize);
+	
+	// Create square canvas for better visualization
+	let cnv = createCanvas(cnvSize, cnvSize);
 	cnv.parent("sketch");
 	
-	// Set base frame rate
+	// Set optimal frame rate for visualization
 	frameRate(30);
-
+	
+	// Initialize UI elements
 	pointsSlider = createSlider(12, 100, numPoints, 1);
 	pointsSlider.parent("num-points");
-
+	pointsSlider.style('width', '200px');
+	
 	pointsDisplay = createP(numPoints);
 	pointsDisplay.parent("points-val");
-
+	
+	// Initialize algorithm selector
 	selectAlgorithm = createSelect();
 	selectAlgorithm.parent("algorithm");
 	selectAlgorithm.option(algorithms.JARVIS);
@@ -282,14 +361,16 @@ function setup() {
 	selectAlgorithm.option(algorithms.MONOTONE);
 	selectAlgorithm.option(algorithms.GRAHAM);
 	selectAlgorithm.changed(algorithmSelectEvent);
-
+	
+	// Initialize direction selector
 	selectAngularDirection = createSelect();
 	selectAngularDirection.parent("algorithm-options");
 	selectAngularDirection.option(direction.CLOCKWISE);
 	selectAngularDirection.option(direction.ANTICLOCKWISE);
 	selectAngularDirection.changed(angularSelectEvent);
 	selectAngularDirection.hide();
-
+	
+	// Initialize split method selector
 	selectSplitMethod = createSelect();
 	selectSplitMethod.parent("algorithm-options");
 	selectSplitMethod.option(splitMethods.HORIZONTAL);
@@ -297,24 +378,22 @@ function setup() {
 	selectSplitMethod.option(splitMethods.RADIAL);
 	selectSplitMethod.changed(splitSelectEvent);
 	selectSplitMethod.hide();
-//TODO (omar: omareq08@gmail.com): ANGULAR split method for dnc notworking
-	// selectSplitMethod.option(splitMethods.ANGULAR);
-
-	resetButton = createButton("Reset", "value");
+	
+	// Create reset button
+	resetButton = createButton("Reset");
 	resetButton.parent("reset-button");
 	resetButton.mousePressed(reset);
-
+	resetButton.class('btn btn-primary');
+	
+	// Initialize viewport parameters
+	pointRadius = cnvSize * 0.015;  // Scale point size with canvas
 	xBuffer = 0.05 * width;
 	yBuffer = 0.05 * height;
-
-	points = []; // Clear points array before initialization
-	for(let i = 0; i < numPoints; ++i) {
-		const x = random(xBuffer, width - xBuffer);
-		const y = random(yBuffer, height - yBuffer);
-		const newPoint = createVector(x, y);
-		points.push(newPoint);
-	}
-
+	
+	// Generate initial points
+	reset();
+	
+	// Show control panel
 	controlPanel = document.getElementById("control-panel");
 	controlPanel.style.visibility = "visible";
 }
@@ -337,9 +416,15 @@ function draw() {
 		reset();
 	}
 
+	// Draw all points with proper styling
+	push();
+	stroke(255);
+	strokeWeight(1);
+	fill(255);
 	for (var i = points.length - 1; i >= 0; i--) {
 		ellipse(points[i].x, points[i].y, pointRadius, pointRadius);
 	}
+	pop();
 
 	switch(algorithm) {
 		case algorithms.JARVIS:

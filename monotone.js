@@ -110,3 +110,5 @@ function monotoneChain() {
 	   	break;
 	}
 }
+
+window.monotoneChain = monotoneChain;
